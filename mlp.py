@@ -49,6 +49,7 @@ class MLP(object):
         # Store num_inputs, num_outputs and functions
         self.num_inputs, self.num_outputs = layers_definition[0], layers_definition[-1]
         self.layers = layers_definition
+        self.num_layers = len(layers_definition)
         self.af = getattr(activation_functions, activation_function)
         self.afd = getattr(activation_functions, 
                 '%s_derivative' % activation_function)
@@ -89,7 +90,7 @@ class MLP(object):
         The activation value of cells in the last layer are the outputs.
         """
         a = [pattern[0]]
-        for l in range(1, len(self.layers)): 
+        for l in range(1, self.num_layers): 
             a.append([self.af(sum([a[l-1][i] * self.w[l][i][j]\
                         for j in range(self.layers[l])]) + self.u[l][i])\
                     for i in range(self.layers[l-1])])
@@ -122,36 +123,36 @@ class MLP(object):
         d = deque()
         if self.delta_last:
             d.appendleft([self.delta_last(pattern[1][i], a[-1][i]) \
-                    for i in range(self.layers_definition[-1])])
+                    for i in range(self.layers[-1])])
         else :
             d.appendleft([(pattern[1][i] - a[-1][i]) *\
                         self.afd(sum([self.w[-2][i][j] * a[-2][i]\
-                                for j in range(self.layers_definition[-2])])\
+                                for j in range(self.layers[-2])])\
                             + self.u[-1][i])\
-                    for i in range(self.layers_definition[-1])])
+                    for i in range(self.layers[-1])])
 
         # Rest of the layers.
         # Apply delta function (or rule) for each layer l greater than 0.
         # delta_i <-- activation_i, delta[l+1] and every weights from cell i to
         # cells in layer l+1
         if self.delta:
-            for l in reversed(range(1, len(self.layers_definition)-1)):
+            for l in reversed(range(1, self.num_layers-1)):
                 d.appendleft([self.delta(a[l][i], d[l+1],\
                         [self.w[l][i][j]\
-                            for j in range(self.layers_definition[l+1])])\
-                    for i in range(self.layers_definition[l])
+                            for j in range(self.layers[l+1])])\
+                    for i in range(self.layers[l])
                     ])
         else :
-            for l in reversed(range(1, len(self.layers_definition)-1)):
+            for l in reversed(range(1, self.num_layers-1)):
                 d.appendleft([self.afd(sum([self.w[l-1][i][j] * a[l-1][i]\
-                            for j in range(self.layers_definition[l-1])])\
+                            for j in range(self.layers[l-1])])\
                         + self.u[-1][i]) *\
                         sum([map(lambda d, w: d * w,
                             d[l+1],
                             [self.w[l][i][j] \
-                                    for j in range(self.layers_definition[l+1])]
+                                    for j in range(self.layers[l+1])]
                             )])
-                        for i in range(self.layers_definition[l]) 
+                        for i in range(self.layers[l]) 
                         ])
         
         # ---------------------------------------------------------------------
@@ -162,9 +163,9 @@ class MLP(object):
         self.u[-1] = map(lambda u, d: u + learning_rate * d, self.u[-1], d[-1])
 
         # Weights and the rest of thresholds
-        for l in reversed(range(len(self.layers_definition)-1)):
-            for i in range(self.layers_definition[l]):
-                for j in range(self.layers_definition[l+1]):
+        for l in reversed(range(self.num_layers-1)):
+            for i in range(self.layers[l]):
+                for j in range(self.layers[l+1]):
                     self.w[l][i][j] += learning_rate * a[l][i] * d[l+1][j] 
                 self.u[l][i] += learning_rate * d[l][i]
 
