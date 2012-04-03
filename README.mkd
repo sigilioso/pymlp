@@ -1,0 +1,4 @@
+A Multilayer Perceptron implemetation in Python
+================================================
+
+**TO-DO**: tests, user interaction...
